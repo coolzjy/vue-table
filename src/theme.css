@@ -1,0 +1,53 @@
+.vt__wrapper {
+  border: 1px solid #ddd;
+}
+
+.vt__table {
+  border-collapse: collapse;
+}
+
+.vt__tr:nth-of-type(2n) .vt__td {
+  background: #fafafa;
+}
+
+.vt__tr.vt__tr__hover .vt__td {
+  background: #ecf6fd;
+}
+
+.vt__th, .vt__td {
+  padding: 4px 6px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vt__th {
+  background: #eee;
+}
+
+.vt-resize-handle::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 30%;
+  right: 2px;
+  bottom: 30%;
+  width: 1px;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  opacity: 0;
+  transition: opacity .5s;
+}
+
+.vt__th:hover .vt-resize-handle::after {
+  opacity: 1;
+}
+
+.vt__left-wrapper {
+  box-shadow: 6px 0 6px -4px rgba(0, 0, 0, .2);
+}
+
+.vt__right-wrapper {
+  box-shadow: -6px 0 6px -4px rgba(0, 0, 0, .2);
+}

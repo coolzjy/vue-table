@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+  <title>Vue Table</title>
+  <link rel="stylesheet" href="https://unpkg.com/docute@3/dist/docute.css">
+  <link rel="stylesheet" href="../dist/index.css">
+  <link rel="stylesheet" href="../dist/theme.css">
+  <style>
+    .vt__table.vt__table,
+    .vt__table .vt__tr,
+    .vt__table .vt__th,
+    .vt__table .vt__td {
+      border: none;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/docute@3/dist/docute.js"></script>
+  <script src="../dist/index.min.js"></script>
+  <script src="data.js"></script>
+  <script>
+    Vue.component('v-table', VueTable)
+
+    docute.init({
+      repo: 'coolzjy/vue-table',
+      plugins: [
+        function evalPlugin(ctx) {
+          ctx.event.on('content:updated', function () {
+            document.querySelectorAll('.content script').forEach(function (el) {
+              var execute = new Function(el.innerHTML)
+              execute()
+            })
+          })
+        }
+      ]
+    })
+  </script>
+</body>
+</html>
