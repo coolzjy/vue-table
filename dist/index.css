@@ -1,0 +1,56 @@
+.vt__wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.vt__main-wrapper .vt-table-head{
+  overflow-x: hidden;
+}
+
+.vt__left-wrapper,
+.vt__right-wrapper {
+  position: absolute;
+  top: 0;
+  background: #fff;
+}
+
+.vt__table,
+.vt__tr,
+.vt__th,
+.vt__td {
+  box-sizing: border-box !important;
+}
+
+.vt__table {
+  display: table !important;
+  margin: 0 !important;
+  table-layout: fixed !important;
+  border-spacing: 0 !important;
+}
+
+/* hide top border of first row to avoid duplicated border */
+.vt__tr:first-of-type .vt__td {
+  border-top: hidden !important;
+}
+
+/* column resize */
+.vt__th {
+  position: relative;
+}
+
+.vt-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+}
+
+.vt__dragging {
+  cursor: col-resize;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
