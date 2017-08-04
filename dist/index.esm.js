@@ -639,20 +639,6 @@ var TableBody = {
   }
 };
 
-var supportsPassive = false;
-
-if (window && typeof window.addEventListener === 'function' && typeof Object.defineProperty === 'function') {
-  var options = Object.defineProperty({}, 'passive', {
-    get: function () {
-      supportsPassive = true;
-    }
-  });
-
-  window.addEventListener('_', null, options);
-}
-
-var index = supportsPassive;
-
 function ScrollSyncer(vertical, horizontal, usePassive) {
   this._from = null;
   this._to = [];
@@ -802,8 +788,8 @@ var TableLayout = {
   },
 
   beforeCreate: function () {
-    this.vss = new index_common(true, false, index);
-    this.hss = new index_common(false, true, index);
+    this.vss = new index_common(true, false);
+    this.hss = new index_common(false, true);
   }
 };
 
