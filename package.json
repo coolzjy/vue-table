@@ -31,8 +31,7 @@
   },
   "homepage": "https://github.com/coolzjy/vue-table#readme",
   "dependencies": {
-    "scroll-syncer": "1.1.1",
-    "supports-passive": "0.0.1"
+    "scroll-syncer": "1.1.1"
   },
   "peerDependencies": {
     "vue": ">2.0.0"

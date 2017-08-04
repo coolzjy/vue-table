@@ -1,4 +1,3 @@
-import supportsPassive from 'supports-passive'
 import ScrollSyncer from 'scroll-syncer'
 import { getFixedNumber } from './utils'
 
@@ -109,7 +108,7 @@ export default {
   },
 
   beforeCreate () {
-    this.vss = new ScrollSyncer(true, false, supportsPassive)
-    this.hss = new ScrollSyncer(false, true, supportsPassive)
+    this.vss = new ScrollSyncer(true, false)
+    this.hss = new ScrollSyncer(false, true)
   }
 }
