@@ -1,47 +1,47 @@
-var cp = require('cp')
-var rollup = require('rollup');
-var babel = require('rollup-plugin-babel')
-var resolve = require('rollup-plugin-node-resolve')
-var commonjs = require('rollup-plugin-commonjs')
-var uglify = require('rollup-plugin-uglify')
+const cp = require('cp')
+const rollup = require('rollup');
+const babel = require('rollup-plugin-babel')
+const resolve = require('rollup-plugin-node-resolve')
+const commonjs = require('rollup-plugin-commonjs')
+const uglify = require('rollup-plugin-uglify')
 
-rollup.rollup({
-  entry: './src/index.js',
-  external: ['vue'],
-  plugins: [
-    babel(),
-    resolve(),
-    commonjs()
-  ]
-}).then(function (bundle) {
-  bundle.write({
-    format: 'cjs',
-    dest: './dist/index.common.js'
-  })
+;(async () => {
+  const inputOptions = {
+    input: './src/index.js',
+    external: ['vue'],
+    plugins: [
+      babel(),
+      resolve(),
+      commonjs()
+    ]
+  }
 
-  bundle.write({
-    format: 'es',
-    dest: './dist/index.esm.js'
-  })
+  const cjsOutputOptions = {
+    file: './dist/index.common.js',
+    format: 'cjs'
+  }
+
+  const esOutputOptions = {
+    file: './dist/index.esm.js',
+    format: 'es'
+  }
+
+  const iifeOutputOptions = {
+    file: './dist/index.min.js',
+    format: 'iife',
+    name: 'VueTable',
+    globals: { vue: 'Vue' }
+  }
+
+  const bundle = await rollup.rollup(inputOptions)
+  await bundle.write(cjsOutputOptions)
+  await bundle.write(esOutputOptions)
+
+  inputOptions.plugins.push(uglify())
+
+  const minBundle = await rollup.rollup(inputOptions)
+  await minBundle.write(iifeOutputOptions)
 
   cp.sync('./src/index.css', './dist/index.css')
   cp.sync('./src/theme.css', './dist/theme.css')
-})
-
-rollup.rollup({
-  entry: './src/index.js',
-  external: ['vue'],
-  plugins: [
-    babel(),
-    resolve(),
-    commonjs(),
-    uglify()
-  ]
-}).then(function (bundle) {
-  bundle.write({
-    format: 'iife',
-    moduleName: 'VueTable',
-    globals: { vue: 'Vue' },
-    dest: './dist/index.min.js'
-  })
-})
+})()
