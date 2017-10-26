@@ -113,13 +113,14 @@ export default {
     columnResize (column, offset, cb) {
       var index = this.columns.indexOf(column)
       var newWidth = this.layout.columnWidth[index] + offset
+      var layout = this.layout
       if (offset < 0) {
         // keep column min width set in column options
         if (typeof column.width === 'number' && newWidth < column.width) {
           return
         }
         // keep table fill the container
-        if (this.layout.totalWidth + offset < this.layout.bodyWidth) {
+        if (layout.totalWidth + offset < layout.bodyWidth) {
           return
         }
         // keep min column width
@@ -127,7 +128,7 @@ export default {
           return
         }
       }
-      this.layout.columnWidth.splice(index, 1, newWidth)
+      layout.columnWidth.splice(index, 1, newWidth)
       if (cb) cb()
     },
 
