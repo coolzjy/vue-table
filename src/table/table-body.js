@@ -45,11 +45,9 @@ export default {
 
     updateScrollbar () {
       if (this.fixed) return
-      setTimeout(_ => {
-        var body = this.$refs.body
-        this.layout.scrollbarWidth = body.offsetWidth - body.clientWidth
-        this.layout.scrollbarHeight = body.offsetHeight - body.clientHeight
-      }, 0)
+      var body = this.$refs.body
+      this.layout.scrollbarWidth = body.offsetWidth - body.clientWidth
+      this.layout.scrollbarHeight = body.offsetHeight - body.clientHeight
     },
 
     /**
