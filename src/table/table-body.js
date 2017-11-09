@@ -59,6 +59,7 @@ export default {
       if (this.fixed) return
       // make sure DOM is updated
       this.$nextTick(_ => {
+        if (!this.$refs.rows) return
         var rowHeight = this.$refs.rows.map(row => row.offsetHeight)
         if (!looseEqual(rowHeight, this.layout.bodyRowHeight) || force) {
           this.layout.bodyRowHeight = rowHeight
