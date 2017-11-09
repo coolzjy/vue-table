@@ -517,14 +517,10 @@ var TableBody = {
       }, 0);
     },
     updateScrollbar: function () {
-      var _this2 = this;
-
       if (this.fixed) return;
-      setTimeout(function (_) {
-        var body = _this2.$refs.body;
-        _this2.layout.scrollbarWidth = body.offsetWidth - body.clientWidth;
-        _this2.layout.scrollbarHeight = body.offsetHeight - body.clientHeight;
-      }, 0);
+      var body = this.$refs.body;
+      this.layout.scrollbarWidth = body.offsetWidth - body.clientWidth;
+      this.layout.scrollbarHeight = body.offsetHeight - body.clientHeight;
     },
 
 
@@ -534,16 +530,16 @@ var TableBody = {
      *  So we expose this api to manually synchronize row height.
      */
     updateRowHeight: function (force) {
-      var _this3 = this;
+      var _this2 = this;
 
       if (this.fixed) return;
       // make sure DOM is updated
       this.$nextTick(function (_) {
-        var rowHeight = _this3.$refs.rows.map(function (row) {
+        var rowHeight = _this2.$refs.rows.map(function (row) {
           return row.offsetHeight;
         });
-        if (!looseEqual(rowHeight, _this3.layout.bodyRowHeight) || force) {
-          _this3.layout.bodyRowHeight = rowHeight;
+        if (!looseEqual(rowHeight, _this2.layout.bodyRowHeight) || force) {
+          _this2.layout.bodyRowHeight = rowHeight;
         }
       });
     }
@@ -555,15 +551,15 @@ var TableBody = {
     this.layout.$on('updatebodywidth', this.updateWidth);
   },
   mounted: function () {
-    var _this4 = this;
+    var _this3 = this;
 
     // synchronize scroll position with table head and fixed columns
     this.$nextTick(function (_) {
-      var body = _this4.$refs.body;
-      _this4.layout.vss[_this4.fixed ? 'to' : 'from'](body);
-      if (_this4.fixed) return;
-      _this4.layout.hss.from(body);
-      addResizeListener(body, _this4.updateWidth);
+      var body = _this3.$refs.body;
+      _this3.layout.vss[_this3.fixed ? 'to' : 'from'](body);
+      if (_this3.fixed) return;
+      _this3.layout.hss.from(body);
+      addResizeListener(body, _this3.updateWidth);
     });
   },
   updated: function () {
@@ -584,7 +580,7 @@ var TableBody = {
     removeResizeListener(body, this.updateWidth);
   },
   render: function (h) {
-    var _this5 = this;
+    var _this4 = this;
 
     return h(
       'div',
@@ -612,16 +608,16 @@ var TableBody = {
             'tr',
             {
               staticClass: 'vt__tr',
-              'class': _this5.getRowClass(rIndex),
-              style: _this5.getRowStyle(rIndex),
+              'class': _this4.getRowClass(rIndex),
+              style: _this4.getRowStyle(rIndex),
               on: {
                 'mouseenter': function (_) {
-                  _this5.updateHoveredRowIndex(rIndex);
+                  _this4.updateHoveredRowIndex(rIndex);
                 }
               },
 
               key: rIndex, ref: 'rows', refInFor: true },
-            [_this5.columns.map(function (column, cIndex) {
+            [_this4.columns.map(function (column, cIndex) {
               return h(
                 TableBodyCell,
                 {
@@ -629,7 +625,7 @@ var TableBody = {
                     column: column,
                     row: row,
                     index: rIndex,
-                    dataBus: _this5.dataBus
+                    dataBus: _this4.dataBus
                   },
                   key: cIndex
                 },
@@ -908,13 +904,14 @@ var Table$1 = {
     columnResize: function (column, offset, cb) {
       var index = this.columns.indexOf(column);
       var newWidth = this.layout.columnWidth[index] + offset;
+      var layout = this.layout;
       if (offset < 0) {
         // keep column min width set in column options
         if (typeof column.width === 'number' && newWidth < column.width) {
           return;
         }
         // keep table fill the container
-        if (this.layout.totalWidth + offset < this.layout.bodyWidth) {
+        if (layout.totalWidth + offset < layout.bodyWidth) {
           return;
         }
         // keep min column width
@@ -922,7 +919,7 @@ var Table$1 = {
           return;
         }
       }
-      this.layout.columnWidth.splice(index, 1, newWidth);
+      layout.columnWidth.splice(index, 1, newWidth);
       if (cb) cb();
     },
 
