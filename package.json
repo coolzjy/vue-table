@@ -8,9 +8,6 @@
     "./dist/index.css",
     "./dist/theme.css"
   ],
-  "files": [
-    "./dist"
-  ],
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --config build/webpack.dev.conf.js --hot --inline --open",
     "build": "cross-env NODE_ENV=production eslint --ext .js ./src && cross-env NODE_ENV=production node build",
