@@ -511,13 +511,16 @@ var TableBody = {
     rows: {
       type: Array,
       required: true
-    }
+    },
+
+    selected: Object
   },
 
   methods: {
-    getRowClass: function (index) {
+    getRowClass: function (row, index) {
       return {
-        'vt__tr__hover': index === this.layout.hoveredRowIndex
+        'vt__tr__hover': index === this.layout.hoveredRowIndex,
+        'vt__tr__selected': row === this.selected
       };
     },
     getRowStyle: function (index) {
@@ -617,9 +620,12 @@ var TableBody = {
             'tr',
             {
               staticClass: 'vt__tr',
-              'class': _this2.getRowClass(rIndex),
+              'class': _this2.getRowClass(row, rIndex),
               style: _this2.getRowStyle(rIndex),
               on: {
+                'click': function (_) {
+                  _this2.$emit('select', row);
+                },
                 'mouseenter': function (_) {
                   _this2.updateHoveredRowIndex(rIndex);
                 }
@@ -874,6 +880,8 @@ var Table$1 = {
 
     useMax: Boolean,
 
+    selected: Object,
+
     dataBus: null
   },
 
@@ -920,9 +928,10 @@ var Table$1 = {
 
     'rows': {
       deep: true,
-      handler: function () {
+      handler: function (value) {
         var _this = this;
 
+        this.select(value && value.length ? value[0] : null);
         this.$nextTick(function (_) {
           _this.layout.updateScrollY();
           _this.layout.updateRowHeight();
@@ -932,6 +941,9 @@ var Table$1 = {
   },
 
   methods: {
+    select: function (row) {
+      this.$emit('update:selected', row);
+    },
     resetHoveredRowIndex: function () {
       this.layout.hoveredRowIndex = null;
     },
@@ -1025,8 +1037,13 @@ var Table$1 = {
           attrs: { columns: this.columns,
             rows: this.rows,
             dataBus: this.dataBus,
-            layout: this.layout
+            layout: this.layout,
+            selected: this.selected
           },
+          on: {
+            'select': this.select
+          },
+
           ref: 'body'
         },
         []
@@ -1060,7 +1077,11 @@ var Table$1 = {
               columns: this.leftColumns,
               rows: this.rows,
               dataBus: this.dataBus,
-              layout: this.layout
+              layout: this.layout,
+              selected: this.selected
+            },
+            on: {
+              'select': this.select
             }
           },
           []
@@ -1096,7 +1117,11 @@ var Table$1 = {
               columns: this.rightColumns,
               rows: this.rows,
               dataBus: this.dataBus,
-              layout: this.layout
+              layout: this.layout,
+              selected: this.selected
+            },
+            on: {
+              'select': this.select
             }
           },
           []
