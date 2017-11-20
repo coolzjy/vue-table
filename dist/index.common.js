@@ -4,7 +4,6 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var Vue = _interopDefault(require('vue'));
 
-var DEFAULT_FONT_WIDTH = 20;
 var DEFAULT_COLUMN_WIDTH = 100;
 
 var MIN_COLUMN_WIDTH = 40;
@@ -20,26 +19,12 @@ function getFixedNumber(fixed, right) {
   return count;
 }
 
-function getColumnWidth(columns, layout, headEl) {
-  var headFontWidth = DEFAULT_FONT_WIDTH;
-  var headCellPadding = 0;
-  var headCellBorderWidth = 0;
-
-  if (headEl) {
-    var th = headEl.querySelector('.vt__th');
-    if (th) {
-      var cellStyle = window.getComputedStyle(th);
-      headFontWidth = parseInt(cellStyle.fontSize);
-      headCellPadding = parseInt(cellStyle.paddingLeft) + parseInt(cellStyle.paddingRight);
-      headCellBorderWidth = parseInt(cellStyle.borderLeft) + parseInt(cellStyle.borderRight);
-    }
-  }
-
+function getColumnWidth(columns) {
   function getWidthByStrLength(length) {
-    return length * headFontWidth + headCellPadding + headCellBorderWidth;
+    return length * 20;
   }
 
-  layout.columnWidth = columns.map(function (column) {
+  return columns.map(function (column) {
     if (typeof column === 'string') {
       return getWidthByStrLength(column.length);
     }
@@ -55,15 +40,15 @@ function getColumnWidth(columns, layout, headEl) {
   });
 }
 
-function fitColumnWidth(columns, layout) {
-  var diff = layout.bodyWidth - layout.totalWidth;
-  var width = layout.columnWidth.map(function (w) {
-    return w + diff * w / layout.totalWidth;
-  });
+function growToFit(columnWidth, bodyWidth) {
+  var totalWidth = columnWidth.reduce(function (prev, curr) {
+    return prev + curr;
+  }, 0);
+  if (totalWidth >= bodyWidth) return columnWidth;
 
-  layout.columnWidth = width.map(function (w, i) {
-    var minWidth = typeof columns[i].width === 'number' ? Math.max(MIN_COLUMN_WIDTH, columns[i].width) : MIN_COLUMN_WIDTH;
-    return w < minWidth ? minWidth : w;
+  var diff = bodyWidth - totalWidth;
+  return columnWidth.map(function (w) {
+    return w + diff * w / totalWidth;
   });
 }
 
@@ -136,25 +121,15 @@ var TableHeadCell = {
   },
 
   methods: {
-    dragStart: function (e) {
-      this.dragging = true;
+    resizeStart: function (e) {
       this.start = e.clientX;
       document.body.classList.add('vt__dragging');
-      document.addEventListener('mousemove', this.dragMove);
-      document.addEventListener('mouseup', this.dragEnd);
+      document.addEventListener('mouseup', this.resizeEnd);
     },
-    dragMove: function (e) {
-      var _this = this;
-
-      this.$emit('resize', this.column, e.clientX - this.start, function (_) {
-        _this.start = e.clientX;
-      });
-    },
-    dragEnd: function (e) {
-      this.dragging = false;
+    resizeEnd: function (e) {
       document.body.classList.remove('vt__dragging');
-      document.removeEventListener('mousemove', this.dragMove);
-      document.removeEventListener('mouseup', this.dragEnd);
+      this.$emit('resize', this.column, e.clientX - this.start);
+      document.removeEventListener('mouseup', this.resizeEnd);
     }
   },
 
@@ -168,7 +143,7 @@ var TableHeadCell = {
         {
           'class': 'vt-resize-handle',
           on: {
-            'mousedown': this.dragStart
+            'mousedown': this.resizeStart
           }
         },
         []
@@ -286,140 +261,190 @@ var TableHead = {
   }
 };
 
+/* eslint-disable */
 /**
- *  Detect Element Resize
- *
- *  https://github.com/sdecima/javascript-detect-element-resize
- *  Sebastian Decima
- *
- *  version: 0.5.3
+ * Copyright Marc J. Schmidt. See the LICENSE file at the top-level
+ * directory of this distribution and at
+ * https://github.com/marcj/css-element-queries/blob/master/LICENSE.
  */
 
-var stylesCreated = false;
-
-var requestFrame = function () {
-  var raf = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || function (fn) {
+// Only used for the dirty checking, so the event callback count is limited to max 1 call per fps per sensor.
+// In combination with the event based resize sensor this saves cpu time, because the sensor is too fast and
+// would generate too many unnecessary events.
+var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || function (fn) {
     return window.setTimeout(fn, 20);
-  };
-  return function (fn) {
-    return raf(fn);
-  };
-}();
+};
 
-var cancelFrame = function () {
-  var cancel = window.cancelAnimationFrame || window.mozCancelAnimationFrame || window.webkitCancelAnimationFrame || window.clearTimeout;
-  return function (id) {
-    return cancel(id);
-  };
-}();
-
-function resetTriggers(element) {
-  var triggers = element.__resizeTriggers__;
-  var expand = triggers.firstElementChild;
-  var contract = triggers.lastElementChild;
-  var expandChild = expand.firstElementChild;
-  contract.scrollLeft = contract.scrollWidth;
-  contract.scrollTop = contract.scrollHeight;
-  expandChild.style.width = expand.offsetWidth + 1 + 'px';
-  expandChild.style.height = expand.offsetHeight + 1 + 'px';
-  expand.scrollLeft = expand.scrollWidth;
-  expand.scrollTop = expand.scrollHeight;
-}
-
-function checkTriggers(element) {
-  return element.offsetWidth !== element.__resizeLast__.width || element.offsetHeight !== element.__resizeLast__.height;
-}
-
-function scrollListener(e) {
-  var element = this;
-  resetTriggers(this);
-  if (this.__resizeRAF__) cancelFrame(this.__resizeRAF__);
-  this.__resizeRAF__ = requestFrame(function () {
-    if (checkTriggers(element)) {
-      element.__resizeLast__.width = element.offsetWidth;
-      element.__resizeLast__.height = element.offsetHeight;
-      element.__resizeListeners__.forEach(function (fn) {
-        fn.call(element, e);
-      });
-    }
-  });
-}
-
-/* Detect CSS Animations support to detect element display/re-attach */
-var animation = false;
-var keyframeprefix = '';
-var animationstartevent = 'animationstart';
-var domPrefixes = 'Webkit Moz O ms'.split(' ');
-var startEvents = 'webkitAnimationStart animationstart oAnimationStart MSAnimationStart'.split(' ');
-var pfx = '';
-
-var elm = document.createElement('fakeelement');
-if (elm.style.animationName !== undefined) animation = true;
-
-/* istanbul ignore if */
-if (animation === false) {
-  for (var i = 0; i < domPrefixes.length; i++) {
-    if (elm.style[domPrefixes[i] + 'AnimationName'] !== undefined) {
-      pfx = domPrefixes[i];
-      keyframeprefix = '-' + pfx.toLowerCase() + '-';
-      animationstartevent = startEvents[i];
-      animation = true;
-      break;
-    }
-  }
-}
-
-var animationName = 'resizeanim';
-var animationKeyframes = '@' + keyframeprefix + 'keyframes ' + animationName + ' { from { opacity: 0; } to { opacity: 0; } } ';
-var animationStyle = keyframeprefix + 'animation: 1ms ' + animationName + ';';
-
-function createStyles() {
-  if (!stylesCreated) {
-    // opacity:0 works around a chrome bug https://code.google.com/p/chromium/issues/detail?id=286360
-    var css = (animationKeyframes || '') + '.resize-triggers { ' + (animationStyle || '') + 'visibility: hidden; opacity: 0; } ' + '.resize-triggers, .resize-triggers > div, .contract-trigger:before { content: " "; display: block; position: absolute; top: 0; left: 0; height: 100%; width: 100%; overflow: hidden; } .resize-triggers > div { background: #eee; overflow: auto; } .contract-trigger:before { width: 200%; height: 200%; }';
-    var head = document.head || document.getElementsByTagName('head')[0];
-    var style = document.createElement('style');
-
-    style.type = 'text/css';
-    if (style.styleSheet) {
-      style.styleSheet.cssText = css;
+/**
+ * Iterate over each of the provided element(s).
+ *
+ * @param {HTMLElement|HTMLElement[]} elements
+ * @param {Function}                  callback
+ */
+function forEachElement(elements, callback) {
+    var elementsType = Object.prototype.toString.call(elements);
+    var isCollectionTyped = '[object Array]' === elementsType || '[object NodeList]' === elementsType || '[object HTMLCollection]' === elementsType || '[object Object]' === elementsType || 'undefined' !== typeof jQuery && elements instanceof jQuery //jquery
+    || 'undefined' !== typeof Elements && elements instanceof Elements;
+    var i = 0,
+        j = elements.length;
+    if (isCollectionTyped) {
+        for (; i < j; i++) {
+            callback(elements[i]);
+        }
     } else {
-      style.appendChild(document.createTextNode(css));
+        callback(elements);
     }
-
-    head.appendChild(style);
-    stylesCreated = true;
-  }
 }
 
-function addResizeListener(element, fn) {
-  if (!element.__resizeTriggers__) {
-    if (getComputedStyle(element).position === 'static') {
-      element.style.position = 'relative';
-    }
-    createStyles();
-    element.__resizeLast__ = {};
-    element.__resizeListeners__ = [];(element.__resizeTriggers__ = document.createElement('div')).className = 'resize-triggers';
-    element.__resizeTriggers__.innerHTML = '<div class="expand-trigger"><div></div></div><div class="contract-trigger"></div>';
-    element.appendChild(element.__resizeTriggers__);
-    resetTriggers(element);
-    element.addEventListener('scroll', scrollListener, true);
+/**
+ * Class for dimension change detection.
+ *
+ * @param {Element|Element[]|Elements|jQuery} element
+ * @param {Function} callback
+ *
+ * @constructor
+ */
+var ResizeSensor = function (element, callback) {
+    /**
+     *
+     * @constructor
+     */
+    function EventQueue() {
+        var q = [];
+        this.add = function (ev) {
+            q.push(ev);
+        };
 
-    /* Listen for a css animation to detect element display/re-attach */
-    animationstartevent && element.__resizeTriggers__.addEventListener(animationstartevent, function (e) {
-      if (e.animationName === animationName) resetTriggers(element);
+        var i, j;
+        this.call = function () {
+            for (i = 0, j = q.length; i < j; i++) {
+                q[i].call();
+            }
+        };
+
+        this.remove = function (ev) {
+            var newQueue = [];
+            for (i = 0, j = q.length; i < j; i++) {
+                if (q[i] !== ev) newQueue.push(q[i]);
+            }
+            q = newQueue;
+        };
+
+        this.length = function () {
+            return q.length;
+        };
+    }
+
+    /**
+     *
+     * @param {HTMLElement} element
+     * @param {Function}    resized
+     */
+    function attachResizeEvent(element, resized) {
+        if (!element) return;
+        if (element.resizedAttached) {
+            element.resizedAttached.add(resized);
+            return;
+        }
+
+        element.resizedAttached = new EventQueue();
+        element.resizedAttached.add(resized);
+
+        element.resizeSensor = document.createElement('div');
+        element.resizeSensor.className = 'resize-sensor';
+        var style = 'position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; z-index: -1; visibility: hidden;';
+        var styleChild = 'position: absolute; left: 0; top: 0; transition: 0s;';
+
+        element.resizeSensor.style.cssText = style;
+        element.resizeSensor.innerHTML = '<div class="resize-sensor-expand" style="' + style + '">' + '<div style="' + styleChild + '"></div>' + '</div>' + '<div class="resize-sensor-shrink" style="' + style + '">' + '<div style="' + styleChild + ' width: 200%; height: 200%"></div>' + '</div>';
+        element.appendChild(element.resizeSensor);
+
+        if (element.resizeSensor.offsetParent !== element) {
+            element.style.position = 'relative';
+        }
+
+        var expand = element.resizeSensor.childNodes[0];
+        var expandChild = expand.childNodes[0];
+        var shrink = element.resizeSensor.childNodes[1];
+        var dirty, rafId, newWidth, newHeight;
+        var lastWidth = element.offsetWidth;
+        var lastHeight = element.offsetHeight;
+
+        var reset = function () {
+            expandChild.style.width = '100000px';
+            expandChild.style.height = '100000px';
+
+            expand.scrollLeft = 100000;
+            expand.scrollTop = 100000;
+
+            shrink.scrollLeft = 100000;
+            shrink.scrollTop = 100000;
+        };
+
+        reset();
+
+        var onResized = function () {
+            rafId = 0;
+
+            if (!dirty) return;
+
+            lastWidth = newWidth;
+            lastHeight = newHeight;
+
+            if (element.resizedAttached) {
+                element.resizedAttached.call();
+            }
+        };
+
+        var onScroll = function () {
+            newWidth = element.offsetWidth;
+            newHeight = element.offsetHeight;
+            dirty = newWidth != lastWidth || newHeight != lastHeight;
+
+            if (dirty && !rafId) {
+                rafId = requestAnimationFrame(onResized);
+            }
+
+            reset();
+        };
+
+        var addEvent = function (el, name, cb) {
+            if (el.attachEvent) {
+                el.attachEvent('on' + name, cb);
+            } else {
+                el.addEventListener(name, cb);
+            }
+        };
+
+        addEvent(expand, 'scroll', onScroll);
+        addEvent(shrink, 'scroll', onScroll);
+    }
+
+    forEachElement(element, function (elem) {
+        attachResizeEvent(elem, callback);
     });
-    element.__resizeListeners__.push(fn);
-  }
-}
 
-function removeResizeListener(element, fn) {
-  element.__resizeListeners__.splice(element.__resizeListeners__.indexOf(fn), 1);
-  if (!element.__resizeListeners__.length) {
-    element.removeEventListener('scroll', scrollListener);
-    element.__resizeTriggers__ = !element.removeChild(element.__resizeTriggers__);
-  }
-}
+    this.detach = function (ev) {
+        ResizeSensor.detach(element, ev);
+    };
+};
+
+ResizeSensor.detach = function (element, ev) {
+    forEachElement(element, function (elem) {
+        if (!elem) return;
+        if (elem.resizedAttached && typeof ev == "function") {
+            elem.resizedAttached.remove(ev);
+            if (elem.resizedAttached.length()) return;
+        }
+        if (elem.resizeSensor) {
+            if (elem.contains(elem.resizeSensor)) {
+                elem.removeChild(elem.resizeSensor);
+            }
+            delete elem.resizeSensor;
+            delete elem.resizedAttached;
+        }
+    });
+};
 
 function getBodyCell(column, row, index, dataBus, h) {
   if (typeof column === 'string') {
@@ -509,18 +534,15 @@ var TableBody = {
       this.layout.hoveredRowIndex = index;
     },
     updateWidth: function () {
-      var _this = this;
-
-      if (this.fixed) return;
-      setTimeout(function (_) {
-        _this.layout.bodyWidth = _this.$refs.body.clientWidth;
-      }, 0);
+      this.layout.bodyWidth = this.$refs.body.clientWidth;
     },
-    updateScrollbar: function () {
-      if (this.fixed) return;
+    updateScrollX: function () {
       var body = this.$refs.body;
-      this.layout.scrollbarWidth = body.offsetWidth - body.clientWidth;
-      this.layout.scrollbarHeight = body.offsetHeight - body.clientHeight;
+      this.layout.scrollX = body.offsetHeight - body.clientHeight;
+    },
+    updateScrollY: function () {
+      var body = this.$refs.body;
+      this.layout.scrollY = body.offsetWidth - body.clientWidth;
     },
 
 
@@ -530,64 +552,55 @@ var TableBody = {
      *  So we expose this api to manually synchronize row height.
      */
     updateRowHeight: function (force) {
-      var _this2 = this;
-
-      if (this.fixed) return;
-      // make sure DOM is updated
-      this.$nextTick(function (_) {
-        var rowHeight = _this2.$refs.rows.map(function (row) {
-          return row.offsetHeight;
-        });
-        if (!looseEqual(rowHeight, _this2.layout.bodyRowHeight) || force) {
-          _this2.layout.bodyRowHeight = rowHeight;
-        }
+      if (!this.$refs.rows) return;
+      var rowHeight = this.$refs.rows.map(function (row) {
+        return row.offsetHeight;
       });
+      if (!looseEqual(rowHeight, this.layout.bodyRowHeight) || force) {
+        this.layout.bodyRowHeight = rowHeight;
+      }
     }
   },
 
   created: function () {
     if (this.fixed) return;
-    this.layout.$on('updatescrollbar', this.updateScrollbar);
+    this.layout.$on('updatescrollx', this.updateScrollX);
+    this.layout.$on('updatescrolly', this.updateScrollY);
     this.layout.$on('updatebodywidth', this.updateWidth);
+    this.layout.$on('updaterowheight', this.updateRowHeight);
   },
   mounted: function () {
-    var _this3 = this;
+    var _this = this;
 
     // synchronize scroll position with table head and fixed columns
     this.$nextTick(function (_) {
-      var body = _this3.$refs.body;
-      _this3.layout.vss[_this3.fixed ? 'to' : 'from'](body);
-      if (_this3.fixed) return;
-      _this3.layout.hss.from(body);
-      addResizeListener(body, _this3.updateWidth);
+      var body = _this.$refs.body;
+      _this.layout.vss[_this.fixed ? 'to' : 'from'](body);
+      if (_this.fixed) return;
+      _this.updateWidth();
+      _this.layout.hss.from(body);
+      _this.resizeSensor = new ResizeSensor(body, _this.updateWidth);
     });
-  },
-  updated: function () {
-    /**
-     *  Patch applied means row height might change,
-     *  so we must check row height here
-     */
-    this.updateScrollbar();
-    this.updateRowHeight();
   },
   beforeDestroy: function () {
     var body = this.$refs.body;
     this.layout.vss.off(body);
     if (this.fixed) return;
     this.layout.hss.off(body);
-    this.layout.$off('updatescrollbar', this.updateScrollbar);
+    this.layout.$off('updatescrollx', this.updateScrollX);
+    this.layout.$off('updatescrolly', this.updateScrollY);
     this.layout.$off('updatebodywidth', this.updateWidth);
-    removeResizeListener(body, this.updateWidth);
+    this.resizeSensor.detach();
   },
   render: function (h) {
-    var _this4 = this;
+    var _this2 = this;
 
     return h(
       'div',
       {
+        ref: 'body',
         staticClass: 'vt-table-body',
-        style: { 'overflow-y': this.fixed ? 'hidden' : 'auto' },
-        ref: 'body' },
+        style: { 'overflow-y': this.fixed ? 'hidden' : 'auto' } },
       [h(
         'table',
         {
@@ -608,16 +621,16 @@ var TableBody = {
             'tr',
             {
               staticClass: 'vt__tr',
-              'class': _this4.getRowClass(rIndex),
-              style: _this4.getRowStyle(rIndex),
+              'class': _this2.getRowClass(rIndex),
+              style: _this2.getRowStyle(rIndex),
               on: {
                 'mouseenter': function (_) {
-                  _this4.updateHoveredRowIndex(rIndex);
+                  _this2.updateHoveredRowIndex(rIndex);
                 }
               },
 
               key: rIndex, ref: 'rows', refInFor: true },
-            [_this4.columns.map(function (column, cIndex) {
+            [_this2.columns.map(function (column, cIndex) {
               return h(
                 TableBodyCell,
                 {
@@ -625,7 +638,7 @@ var TableBody = {
                     column: column,
                     row: row,
                     index: rIndex,
-                    dataBus: _this4.dataBus
+                    dataBus: _this2.dataBus
                   },
                   key: cIndex
                 },
@@ -639,24 +652,23 @@ var TableBody = {
   }
 };
 
-function ScrollSyncer(vertical, horizontal, usePassive) {
+function ScrollSyncer(vertical, horizontal) {
   this._from = null;
   this._to = [];
-  this._bindOptions = usePassive ? { passive: true } : undefined;
 
   this._sync = function (e) {
     var target = e.target;
-    this._to.forEach(function (el) {
-      if (vertical) el.scrollTop = target.scrollTop;
-      if (horizontal) el.scrollLeft = target.scrollLeft;
-    }, this);
+    for (var i = 0; i < this._to.length; i++) {
+      if (vertical) this._to[i].scrollTop = target.scrollTop;
+      if (horizontal) this._to[i].scrollLeft = target.scrollLeft;
+    }
   }.bind(this);
 }
 
 ScrollSyncer.prototype.from = function (target) {
   if (!target || !target.addEventListener) return;
   this._from = target;
-  this._from.addEventListener('scroll', this._sync, this._bindOptions);
+  this._from.addEventListener('scroll', this._sync);
 };
 
 ScrollSyncer.prototype.to = function (target) {
@@ -706,8 +718,8 @@ var TableLayout = {
       headRowHeight: undefined,
       bodyRowHeight: [],
 
-      scrollbarWidth: 0,
-      scrollbarHeight: 0,
+      scrollX: 0,
+      scrollY: 0,
 
       hoveredRowIndex: null
     };
@@ -744,7 +756,7 @@ var TableLayout = {
     },
     mainHeadStyle: function () {
       return {
-        'margin-right': this.scrollbarWidth + 'px'
+        'margin-right': this.scrollY + 'px'
       };
     },
     bodyHeight: function () {
@@ -759,31 +771,77 @@ var TableLayout = {
     },
     rightWrapperStyle: function () {
       return {
-        'right': this.scrollbarWidth + 'px'
+        'right': this.scrollY + 'px'
       };
     },
     fixedBodyStyle: function () {
       return {
-        'max-height': this.bodyHeight - this.scrollbarHeight + 'px'
+        'max-height': this.bodyHeight - this.scrollX + 'px'
       };
     }
   },
 
   watch: {
-    // update scrollbar size when body size changed
-    'bodyWidth': 'updateScrollbar',
-    'bodyHeight': 'updateScrollbar',
+    'columnWidth': function () {
+      this.$nextTick(this.updateRowHeight);
+    },
+    'totalWidth': function () {
+      this.$nextTick(this.updateScrollX);
+    },
 
-    // resize listener will not trigger when scrollbar appear/disappear
-    'scrollbarWidth': 'updateBodyWidth'
+    'bodyWidth': {
+      sync: true,
+      handler: function (val, oldVal) {
+        if (val > oldVal || oldVal == null) {
+          this.updateColumnWidth();
+        }
+        this.updateScrollX();
+      }
+    },
+
+    'scrollX': {
+      sync: true,
+      handler: 'updateScrollY'
+    },
+    'scrollY': {
+      sync: true,
+      handler: function (val) {
+        if (val) {
+          this.updateScrollX();
+        } else {
+          this.updateColumnWidth();
+        }
+      }
+    },
+
+    'bodyHeight': function () {
+      this.$nextTick(this.updateScrollY);
+    }
+
+    //
+    // // resize listener will not trigger when scrollbar appear/disappear
+    // 'scrollbarWidth': {
+    //   sync: true,
+    //   handler: 'updateBodyWidth'
+    // }
+
   },
 
   methods: {
-    updateScrollbar: function () {
-      this.$emit('updatescrollbar');
+    updateScrollX: function () {
+      this.$emit('updatescrollx');
+    },
+    updateScrollY: function () {
+      this.$emit('updatescrolly');
+    },
+    updateColumnWidth: function () {
+      this.$emit('updatecolumnwidth');
     },
     updateBodyWidth: function () {
       this.$emit('updatebodywidth');
+    },
+    updateRowHeight: function () {
+      this.$emit('updaterowheight');
     }
   },
 
@@ -823,13 +881,6 @@ var Table$1 = {
     dataBus: null
   },
 
-  data: function () {
-    return {
-      layoutComplete: false
-    };
-  },
-
-
   computed: {
     leftColumns: function () {
       return this.columns.slice(0, this.layout.leftColumnNumber);
@@ -863,25 +914,24 @@ var Table$1 = {
     },
 
     'columns': {
+      immediate: true,
       deep: true,
+      sync: true,
       handler: function () {
-        var _this = this;
-
-        this.$nextTick(function (_) {
-          _this.layoutColumns(true);
-        });
+        this.layoutColumns(true);
       }
     },
 
     'rows': {
       deep: true,
-      handler: 'syncHeight'
-    },
+      handler: function () {
+        var _this = this;
 
-    'layout.bodyWidth': function () {
-      // no need to adjust column width
-      if (this.layoutComplete && this.layout.scrollbarHeight !== 0) return;
-      this.layoutColumns();
+        this.$nextTick(function (_) {
+          _this.layout.updateScrollY();
+          _this.layout.updateRowHeight();
+        });
+      }
     }
   },
 
@@ -890,20 +940,23 @@ var Table$1 = {
       this.layout.hoveredRowIndex = null;
     },
     layoutColumns: function (reset) {
-      if (this.columns.length !== this.layout.columnWidth.length || reset) {
-        // get new column size
-        getColumnWidth(this.columns, this.layout, this.$refs.head.$el);
+      var layout = this.layout;
+      var columns = this.columns;
+      var columnWidth = layout.columnWidth;
+      var bodyWidth = layout.bodyWidth;
+      if (!bodyWidth) return;
+      if (columns.length !== columnWidth.length || reset) {
+        columnWidth = getColumnWidth(columns);
       }
-      // fit column width
-      fitColumnWidth(this.columns, this.layout);
-      if (!this.layoutComplete) this.layoutComplete = true;
+      layout.columnWidth = growToFit(columnWidth, bodyWidth);
     },
 
 
     // column resize
-    columnResize: function (column, offset, cb) {
+    columnResize: function (column, offset) {
       var index = this.columns.indexOf(column);
-      var newWidth = this.layout.columnWidth[index] + offset;
+      var columnWidth = this.layout.columnWidth.slice();
+      var newWidth = columnWidth[index] + offset;
       var layout = this.layout;
       if (offset < 0) {
         // keep column min width set in column options
@@ -919,8 +972,8 @@ var Table$1 = {
           return;
         }
       }
-      layout.columnWidth.splice(index, 1, newWidth);
-      if (cb) cb();
+      columnWidth.splice(index, 1, newWidth);
+      layout.columnWidth = columnWidth;
     },
 
 
@@ -937,6 +990,16 @@ var Table$1 = {
 
   beforeCreate: function () {
     this.layout = new Vue(TableLayout);
+  },
+  created: function () {
+    var _this2 = this;
+
+    this.layout.$on('updatecolumnwidth', function (_) {
+      return _this2.layoutColumns();
+    });
+  },
+  beforeDestroy: function () {
+    this.layout.$off('updatecolumnwidth');
   },
   render: function (h) {
     var left, right;
@@ -1049,7 +1112,6 @@ var Table$1 = {
       'div',
       {
         staticClass: 'vt__wrapper',
-        style: { visibility: this.layoutComplete ? 'visible' : 'hidden' },
         on: {
           'mouseleave': this.resetHoveredRowIndex
         },

@@ -33,6 +33,10 @@
   border-top: hidden !important;
 }
 
+.vt__th, .vt__td {
+  overflow: hidden;
+}
+
 /* column resize */
 .vt__th {
   position: relative;
