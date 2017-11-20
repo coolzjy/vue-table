@@ -12,13 +12,16 @@ export default {
     rows: {
       type: Array,
       required: true
-    }
+    },
+
+    selected: Object
   },
 
   methods: {
-    getRowClass (index) {
+    getRowClass (row, index) {
       return {
-        'vt__tr__hover': index === this.layout.hoveredRowIndex
+        'vt__tr__hover': index === this.layout.hoveredRowIndex,
+        'vt__tr__selected': row === this.selected
       }
     },
 
@@ -108,8 +111,9 @@ export default {
             this.rows.map((row, rIndex) =>
               <tr
                 staticClass="vt__tr"
-                class={this.getRowClass(rIndex)}
+                class={this.getRowClass(row, rIndex)}
                 style={this.getRowStyle(rIndex)}
+                onClick={_ => { this.$emit('select', row) }}
                 onMouseenter={_ => { this.updateHoveredRowIndex(rIndex) }}
                 key={rIndex} ref="rows" refInFor>
                 {

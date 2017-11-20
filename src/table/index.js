@@ -31,6 +31,8 @@ export default {
 
     useMax: Boolean,
 
+    selected: Object,
+
     dataBus: null
   },
 
@@ -78,7 +80,8 @@ export default {
 
     'rows': {
       deep: true,
-      handler () {
+      handler (value) {
+        this.select(value && value.length ? value[0] : null)
         this.$nextTick(_ => {
           this.layout.updateScrollY()
           this.layout.updateRowHeight()
@@ -88,6 +91,10 @@ export default {
   },
 
   methods: {
+    select (row) {
+      this.$emit('update:selected', row)
+    },
+
     resetHoveredRowIndex () {
       this.layout.hoveredRowIndex = null
     },
@@ -171,6 +178,8 @@ export default {
           rows={this.rows}
           dataBus={this.dataBus}
           layout={this.layout}
+          selected={this.selected}
+          onSelect={this.select}
           ref="body"
         />
       </div>
@@ -194,6 +203,8 @@ export default {
             rows={this.rows}
             dataBus={this.dataBus}
             layout={this.layout}
+            selected={this.selected}
+            onSelect={this.select}
           />
         </div>
       )
@@ -218,6 +229,8 @@ export default {
             rows={this.rows}
             dataBus={this.dataBus}
             layout={this.layout}
+            selected={this.selected}
+            onSelect={this.select}
           />
         </div>
       )
