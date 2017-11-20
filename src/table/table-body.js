@@ -1,8 +1,5 @@
 import mixin from './mixin'
-import {
-  addResizeListener,
-  removeResizeListener
-} from './resize-detector'
+import ResizeSensor from './resize-detector'
 import TableBodyCell from './table-body-cell'
 import { looseEqual } from './utils'
 
@@ -80,8 +77,9 @@ export default {
       var body = this.$refs.body
       this.layout.vss[this.fixed ? 'to' : 'from'](body)
       if (this.fixed) return
+      this.updateWidth()
       this.layout.hss.from(body)
-      addResizeListener(body, this.updateWidth)
+      this.resizeSensor = new ResizeSensor(body, this.updateWidth)
     })
   },
 
@@ -101,7 +99,7 @@ export default {
     this.layout.hss.off(body)
     this.layout.$off('updatescrollbar', this.updateScrollbar)
     this.layout.$off('updatebodywidth', this.updateWidth)
-    removeResizeListener(body, this.updateWidth)
+    this.resizeSensor.detach()
   },
 
   render (h) {
