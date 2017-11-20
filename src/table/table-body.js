@@ -34,17 +34,17 @@ export default {
     },
 
     updateWidth () {
-      if (this.fixed) return
-      setTimeout(_ => {
-        this.layout.bodyWidth = this.$refs.body.clientWidth
-      }, 0)
+      this.layout.bodyWidth = this.$refs.body.clientWidth
     },
 
-    updateScrollbar () {
-      if (this.fixed) return
+    updateScrollX () {
       var body = this.$refs.body
-      this.layout.scrollbarWidth = body.offsetWidth - body.clientWidth
-      this.layout.scrollbarHeight = body.offsetHeight - body.clientHeight
+      this.layout.scrollX = body.offsetHeight - body.clientHeight
+    },
+
+    updateScrollY () {
+      var body = this.$refs.body
+      this.layout.scrollY = body.offsetWidth - body.clientWidth
     },
 
     /**
@@ -53,22 +53,20 @@ export default {
      *  So we expose this api to manually synchronize row height.
      */
     updateRowHeight (force) {
-      if (this.fixed) return
-      // make sure DOM is updated
-      this.$nextTick(_ => {
-        if (!this.$refs.rows) return
-        var rowHeight = this.$refs.rows.map(row => row.offsetHeight)
-        if (!looseEqual(rowHeight, this.layout.bodyRowHeight) || force) {
-          this.layout.bodyRowHeight = rowHeight
-        }
-      })
+      if (!this.$refs.rows) return
+      var rowHeight = this.$refs.rows.map(row => row.offsetHeight)
+      if (!looseEqual(rowHeight, this.layout.bodyRowHeight) || force) {
+        this.layout.bodyRowHeight = rowHeight
+      }
     }
   },
 
   created () {
     if (this.fixed) return
-    this.layout.$on('updatescrollbar', this.updateScrollbar)
+    this.layout.$on('updatescrollx', this.updateScrollX)
+    this.layout.$on('updatescrolly', this.updateScrollY)
     this.layout.$on('updatebodywidth', this.updateWidth)
+    this.layout.$on('updaterowheight', this.updateRowHeight)
   },
 
   mounted () {
@@ -83,21 +81,13 @@ export default {
     })
   },
 
-  updated () {
-    /**
-     *  Patch applied means row height might change,
-     *  so we must check row height here
-     */
-    this.updateScrollbar()
-    this.updateRowHeight()
-  },
-
   beforeDestroy () {
     var body = this.$refs.body
     this.layout.vss.off(body)
     if (this.fixed) return
     this.layout.hss.off(body)
-    this.layout.$off('updatescrollbar', this.updateScrollbar)
+    this.layout.$off('updatescrollx', this.updateScrollX)
+    this.layout.$off('updatescrolly', this.updateScrollY)
     this.layout.$off('updatebodywidth', this.updateWidth)
     this.resizeSensor.detach()
   },
@@ -105,9 +95,9 @@ export default {
   render (h) {
     return (
       <div
+        ref="body"
         staticClass="vt-table-body"
-        style={{ 'overflow-y': this.fixed ? 'hidden' : 'auto' }}
-        ref="body">
+        style={{ 'overflow-y': this.fixed ? 'hidden' : 'auto' }}>
         <table
           staticClass="vt__table"
           style={this.tableStyle}>

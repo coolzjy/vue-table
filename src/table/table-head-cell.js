@@ -30,25 +30,16 @@ export default {
   },
 
   methods: {
-    dragStart (e) {
-      this.dragging = true
+    resizeStart (e) {
       this.start = e.clientX
       document.body.classList.add('vt__dragging')
-      document.addEventListener('mousemove', this.dragMove)
-      document.addEventListener('mouseup', this.dragEnd)
+      document.addEventListener('mouseup', this.resizeEnd)
     },
 
-    dragMove (e) {
-      this.$emit('resize', this.column, e.clientX - this.start, _ => {
-        this.start = e.clientX
-      })
-    },
-
-    dragEnd (e) {
-      this.dragging = false
+    resizeEnd (e) {
       document.body.classList.remove('vt__dragging')
-      document.removeEventListener('mousemove', this.dragMove)
-      document.removeEventListener('mouseup', this.dragEnd)
+      this.$emit('resize', this.column, e.clientX - this.start)
+      document.removeEventListener('mouseup', this.resizeEnd)
     }
   },
 
@@ -61,7 +52,7 @@ export default {
           !this.column.disableResize && (
             <div
               class="vt-resize-handle"
-              onMousedown={this.dragStart}
+              onMousedown={this.resizeStart}
             />
           )
         }

@@ -2,7 +2,7 @@ import Vue from 'vue'
 import {
   MIN_COLUMN_WIDTH,
   getColumnWidth,
-  fitColumnWidth
+  growToFit
 } from './utils'
 import TableHead from './table-head'
 import TableBody from './table-body'
@@ -32,12 +32,6 @@ export default {
     useMax: Boolean,
 
     dataBus: null
-  },
-
-  data () {
-    return {
-      layoutComplete: false
-    }
   },
 
   computed: {
@@ -74,23 +68,22 @@ export default {
     },
 
     'columns': {
+      immediate: true,
       deep: true,
+      sync: true,
       handler () {
-        this.$nextTick(_ => {
-          this.layoutColumns(true)
-        })
+        this.layoutColumns(true)
       }
     },
 
     'rows': {
       deep: true,
-      handler: 'syncHeight'
-    },
-
-    'layout.bodyWidth' () {
-      // no need to adjust column width
-      if (this.layoutComplete && this.layout.scrollbarHeight !== 0) return
-      this.layoutColumns()
+      handler () {
+        this.$nextTick(_ => {
+          this.layout.updateScrollY()
+          this.layout.updateRowHeight()
+        })
+      }
     }
   },
 
@@ -100,19 +93,22 @@ export default {
     },
 
     layoutColumns (reset) {
-      if (this.columns.length !== this.layout.columnWidth.length || reset) {
-        // get new column size
-        getColumnWidth(this.columns, this.layout, this.$refs.head.$el)
+      var layout = this.layout
+      var columns = this.columns
+      var columnWidth = layout.columnWidth
+      var bodyWidth = layout.bodyWidth
+      if (!bodyWidth) return
+      if (columns.length !== columnWidth.length || reset) {
+        columnWidth = getColumnWidth(columns)
       }
-      // fit column width
-      fitColumnWidth(this.columns, this.layout)
-      if (!this.layoutComplete) this.layoutComplete = true
+      layout.columnWidth = growToFit(columnWidth, bodyWidth)
     },
 
     // column resize
-    columnResize (column, offset, cb) {
+    columnResize (column, offset) {
       var index = this.columns.indexOf(column)
-      var newWidth = this.layout.columnWidth[index] + offset
+      var columnWidth = this.layout.columnWidth.slice()
+      var newWidth = columnWidth[index] + offset
       var layout = this.layout
       if (offset < 0) {
         // keep column min width set in column options
@@ -128,8 +124,8 @@ export default {
           return
         }
       }
-      layout.columnWidth.splice(index, 1, newWidth)
-      if (cb) cb()
+      columnWidth.splice(index, 1, newWidth)
+      layout.columnWidth = columnWidth
     },
 
     // @exposed
@@ -145,6 +141,14 @@ export default {
 
   beforeCreate () {
     this.layout = new Vue(TableLayout)
+  },
+
+  created () {
+    this.layout.$on('updatecolumnwidth', _ => this.layoutColumns())
+  },
+
+  beforeDestroy () {
+    this.layout.$off('updatecolumnwidth')
   },
 
   render (h) {
@@ -222,7 +226,6 @@ export default {
     return (
       <div
         staticClass="vt__wrapper"
-        style={{ visibility: this.layoutComplete ? 'visible' : 'hidden' }}
         onMouseleave={this.resetHoveredRowIndex}
         ref="wrapper">
         {main}

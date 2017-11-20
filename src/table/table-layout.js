@@ -16,8 +16,8 @@ export default {
       headRowHeight: undefined,
       bodyRowHeight: [],
 
-      scrollbarWidth: 0,
-      scrollbarHeight: 0,
+      scrollX: 0,
+      scrollY: 0,
 
       hoveredRowIndex: null
     }
@@ -56,7 +56,7 @@ export default {
 
     mainHeadStyle () {
       return {
-        'margin-right': this.scrollbarWidth + 'px'
+        'margin-right': this.scrollY + 'px'
       }
     },
 
@@ -77,33 +77,80 @@ export default {
 
     rightWrapperStyle () {
       return {
-        'right': this.scrollbarWidth + 'px'
+        'right': this.scrollY + 'px'
       }
     },
 
     fixedBodyStyle () {
       return {
-        'max-height': this.bodyHeight - this.scrollbarHeight + 'px'
+        'max-height': this.bodyHeight - this.scrollX + 'px'
       }
     }
   },
 
   watch: {
-    // update scrollbar size when body size changed
-    'bodyWidth': 'updateScrollbar',
-    'bodyHeight': 'updateScrollbar',
+    'columnWidth' () {
+      this.$nextTick(this.updateRowHeight)
+    },
+    'totalWidth' () {
+      this.$nextTick(this.updateScrollX)
+    },
+    'bodyWidth': {
+      sync: true,
+      handler (val, oldVal) {
+        if (val > oldVal || oldVal == null) {
+          this.updateColumnWidth()
+        }
+        this.updateScrollX()
+      }
+    },
 
-    // resize listener will not trigger when scrollbar appear/disappear
-    'scrollbarWidth': 'updateBodyWidth'
+    'scrollX': {
+      sync: true,
+      handler: 'updateScrollY'
+    },
+    'scrollY': {
+      sync: true,
+      handler (val) {
+        if (val) {
+          this.updateScrollX()
+        } else {
+          this.updateColumnWidth()
+        }
+      }
+    },
+
+    'bodyHeight' () {
+      this.$nextTick(this.updateScrollY)
+    }
+
+    //
+    // // resize listener will not trigger when scrollbar appear/disappear
+    // 'scrollbarWidth': {
+    //   sync: true,
+    //   handler: 'updateBodyWidth'
+    // }
   },
 
   methods: {
-    updateScrollbar () {
-      this.$emit('updatescrollbar')
+    updateScrollX () {
+      this.$emit('updatescrollx')
+    },
+
+    updateScrollY () {
+      this.$emit('updatescrolly')
+    },
+
+    updateColumnWidth () {
+      this.$emit('updatecolumnwidth')
     },
 
     updateBodyWidth () {
       this.$emit('updatebodywidth')
+    },
+
+    updateRowHeight () {
+      this.$emit('updaterowheight')
     }
   },
 

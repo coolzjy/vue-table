@@ -49,11 +49,6 @@ describe('Component Table', function () {
       assert.property(Table.props, 'dataBus')
     })
 
-    it('data', function () {
-      var result = Table.data()
-      assert.deepEqual(result, { layoutComplete: false })
-    })
-
     it('hooks', function () {
       assert.typeOf(Table.beforeCreate, 'function')
     })
@@ -61,10 +56,6 @@ describe('Component Table', function () {
 
   describe('Instance', function () {
     describe('Property', function () {
-      it('layoutComplete', function () {
-        assert.strictEqual(vm.layoutComplete, true)
-      })
-
       it('leftColumns', function () {
         assert.deepEqual(vm.leftColumns, [columns[0]])
       })
