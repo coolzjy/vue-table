@@ -79,6 +79,7 @@ export default {
     },
 
     'rows': {
+      immediate: true,
       deep: true,
       handler (value) {
         this.select(value && value.length ? value[0] : null)
