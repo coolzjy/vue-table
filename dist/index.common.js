@@ -603,7 +603,7 @@ var TableBody = {
       {
         ref: 'body',
         staticClass: 'vt-table-body',
-        style: { 'overflow-y': this.fixed ? 'hidden' : 'auto' } },
+        style: { 'overflow': this.fixed ? 'hidden' : 'auto' } },
       [h(
         'table',
         {
@@ -839,6 +839,12 @@ var TableLayout = {
     },
     updateScrollY: function () {
       this.$emit('updatescrolly');
+
+      // when vertical scrollbar appears,
+      // horizental scrollbar will not appear synchronously,
+      if (this.scrollY !== 0 && this.scrollX === 0) {
+        this.updateScrollX();
+      }
     },
     updateColumnWidth: function () {
       this.$emit('updatecolumnwidth');
@@ -931,15 +937,16 @@ var Table$1 = {
     },
 
     'rows': {
+      immediate: true,
       deep: true,
       handler: function (value) {
         var _this = this;
 
         this.select(value && value.length ? value[0] : null);
-        this.$nextTick(function (_) {
+        setTimeout(function (_) {
           _this.layout.updateScrollY();
           _this.layout.updateRowHeight();
-        });
+        }, 0);
       }
     }
   },
