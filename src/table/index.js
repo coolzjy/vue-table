@@ -83,10 +83,10 @@ export default {
       deep: true,
       handler (value) {
         this.select(value && value.length ? value[0] : null)
-        this.$nextTick(_ => {
+        setTimeout(_ => {
           this.layout.updateScrollY()
           this.layout.updateRowHeight()
-        })
+        }, 0)
       }
     }
   },

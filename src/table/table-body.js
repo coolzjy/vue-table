@@ -100,7 +100,7 @@ export default {
       <div
         ref="body"
         staticClass="vt-table-body"
-        style={{ 'overflow-y': this.fixed ? 'hidden' : 'auto' }}>
+        style={{ 'overflow': this.fixed ? 'hidden' : 'auto' }}>
         <table
           staticClass="vt__table"
           style={this.tableStyle}>

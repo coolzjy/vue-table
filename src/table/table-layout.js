@@ -139,6 +139,12 @@ export default {
 
     updateScrollY () {
       this.$emit('updatescrolly')
+
+      // when vertical scrollbar appears,
+      // horizental scrollbar will not appear synchronously,
+      if (this.scrollY !== 0 && this.scrollX === 0) {
+        this.updateScrollX()
+      }
     },
 
     updateColumnWidth () {
