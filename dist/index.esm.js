@@ -487,15 +487,22 @@ var TableBodyCell = {
     dataBus: null
   },
 
-  render: function (h, context) {
-    var content = getBodyCell(context.props.column, context.props.row, context.props.index, context.props.dataBus, h);
+  render: function (h, c) {
+    var content = getBodyCell(c.props.column, c.props.row, c.props.index, c.props.dataBus, h);
+
+    var click = c.data.on && c.data.on['cell-click'];
 
     return h(
       'td',
       {
         staticClass: 'vt__td',
-        'class': { 'vt__td__covered': context.props.covered },
-        attrs: { title: typeof content === 'string' ? content : '' }
+        attrs: { title: typeof content === 'string' ? content : ''
+        },
+        on: {
+          'click': function (e) {
+            return click && click(c.props.row, c.props.columns, e);
+          }
+        }
       },
       [content]
     );
@@ -642,7 +649,12 @@ var TableBody = {
                     index: rIndex,
                     dataBus: _this2.dataBus
                   },
-                  key: cIndex
+                  key: cIndex,
+                  on: {
+                    'cell-click': function (a, b, c) {
+                      return _this2.$emit('cell-click', a, b, c);
+                    }
+                  }
                 },
                 []
               );
@@ -1017,6 +1029,8 @@ var Table$1 = {
     this.layout.$off('updatecolumnwidth');
   },
   render: function (h) {
+    var _this3 = this;
+
     var left, right;
 
     var main = h(
@@ -1048,7 +1062,10 @@ var Table$1 = {
             selected: this.selected
           },
           on: {
-            'select': this.select
+            'select': this.select,
+            'cell-click': function (a, b, c) {
+              return _this3.$emit('cell-click', a, b, c);
+            }
           },
 
           ref: 'body'
@@ -1088,7 +1105,10 @@ var Table$1 = {
               selected: this.selected
             },
             on: {
-              'select': this.select
+              'select': this.select,
+              'cell-click': function (a, b, c) {
+                return _this3.$emit('cell-click', a, b, c);
+              }
             }
           },
           []
@@ -1128,7 +1148,10 @@ var Table$1 = {
               selected: this.selected
             },
             on: {
-              'select': this.select
+              'select': this.select,
+              'cell-click': function (a, b, c) {
+                return _this3.$emit('cell-click', a, b, c);
+              }
             }
           },
           []
