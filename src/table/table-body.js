@@ -124,6 +124,7 @@ export default {
                       index={rIndex}
                       dataBus={this.dataBus}
                       key={cIndex}
+                      on-cell-click={(a, b, c) => this.$emit('cell-click', a, b, c)}
                     />
                   )
                 }

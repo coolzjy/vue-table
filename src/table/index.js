@@ -182,6 +182,7 @@ export default {
           selected={this.selected}
           onSelect={this.select}
           ref="body"
+          on-cell-click={(a, b, c) => this.$emit('cell-click', a, b, c)}
         />
       </div>
     )
@@ -206,6 +207,7 @@ export default {
             layout={this.layout}
             selected={this.selected}
             onSelect={this.select}
+            on-cell-click={(a, b, c) => this.$emit('cell-click', a, b, c)}
           />
         </div>
       )
@@ -232,6 +234,7 @@ export default {
             layout={this.layout}
             selected={this.selected}
             onSelect={this.select}
+            on-cell-click={(a, b, c) => this.$emit('cell-click', a, b, c)}
           />
         </div>
       )

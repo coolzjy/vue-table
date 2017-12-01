@@ -43,15 +43,17 @@ export default {
     dataBus: null
   },
 
-  render (h, context) {
-    var content = getBodyCell(context.props.column, context.props.row,
-      context.props.index, context.props.dataBus, h)
+  render (h, c) {
+    var content = getBodyCell(c.props.column, c.props.row,
+      c.props.index, c.props.dataBus, h)
+
+    var click = c.data.on && c.data.on['cell-click']
 
     return (
       <td
         staticClass="vt__td"
-        class={{ 'vt__td__covered': context.props.covered }}
-        title={typeof content === 'string' ? content : ''}>
+        title={typeof content === 'string' ? content : ''}
+        onClick={e => click && click(c.props.row, c.props.columns, e)}>
         { content }
       </td>
     )

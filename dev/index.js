@@ -2,7 +2,6 @@ import Vue from 'vue'
 import Table from '@'
 import '@/index.css'
 import '@/theme.css'
-import './index.css'
 import rows from './rows.json'
 
 var columns = [{
@@ -92,6 +91,7 @@ var vm = new Vue({
           rows={this.rows}
           fixed={[1, 1]}
           height={200}
+          on-cell-click={(a, b, c) => console.log(a, b, c)}
         />
       </div>
     )
