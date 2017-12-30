@@ -53,7 +53,7 @@ export default {
       <td
         staticClass="vt__td"
         title={typeof content === 'string' ? content : ''}
-        onClick={e => click && click(c.props.row, c.props.columns, e)}>
+        onClick={e => click && click(c.props.row, c.props.column, e)}>
         { content }
       </td>
     )
